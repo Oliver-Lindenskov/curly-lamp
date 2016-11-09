@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>MuseViser</title>
+        <style media="screen">
+            body,html {
+                height: 100%;
+                width: 100%;
+                position: absolute;
+                background: #bdc3c7;
+                margin: 0;
+                padding: 0;
+                color: White;
+                font-family: Helvetica;
+                text-transform: uppercase;
+            }
+
+            .centerthis {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                margin: auto;
+                text-align: center;
+            }
+            .h1 {
+                height: 24px;
+            }
+            .topthis {
+                z-index: 999;
+                position: absolute;
+                background: black;
+                width: 100%;
+            }
+
+            .topthis ul li{
+                float: left;
+                padding: 10px;
+                list-style: none;
+            }
+            .box {
+                position: absolute;
+                height: 24px;
+                width: 24px;
+                background: pink;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="topthis">
+            <ul>
+                <li>Choose Your Colour</li>
+                <li>
+                    Red: <input type="radio" name="colour" value="#c0392b">
+                </li>
+                <li>
+                    Blue: <input type="radio" name="colour" value="#2980b9">
+                </li>
+                <li>
+                    Green: <input type="radio" name="colour" value="#27ae60">
+                </li>
+                <li>
+                    Black: <input type="radio" name="colour" value="Black" checked>
+                </li>
+            </ul>
+        </div>
+        <div class="centerthis">
+            <h1 class="centerthis h1" id="thisone">Move Your Mouse</h1>
+        </div>
+        <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+        <script type="text/javascript">
+            var socket = io();
+
+            socket.on('position' , function(pos){
+                var el = document.getElementById(pos.id);
+                el.style.background = pos.colour;
+                // console.log((pos.y/100) * window.innerHeight);
+                el.style.top = Math.floor((pos.y/100) * window.innerHeight) + 'px';
+                el.style.left = Math.floor((pos.x/100) * window.innerWidth) + 'px';
+
+            });
+            socket.on('users' , function(data){
+                data.forEach(function(user){
+                    var square = document.createElement('DIV');
+                    square.classList = 'box';
+                    square.id = user;
+                    document.body.appendChild(square);
+                });
+            });
+            socket.on('newcon', function(data) {
+                console.log('New User Has Entered');
+            });
+
+            socket.on('create box' , function(data){
+                var square = document.createElement('DIV');
+                square.classList = 'box';
+                square.id = data;
+                document.body.appendChild(square);
+            });
+
+            socket.on('connections' , function(users) {
+                users.forEach(function(user){
+                    var square = document.createElement('DIV');
+                    square.classList = 'box';
+                    square.id = user;
+                    document.body.appendChild(square);
+                });
+            });
+
+            (function(){
+                var pos = {
+                    x: '',
+                    y: '',
+                    colour: 'Black'
+                }
+                socket.emit('new user');
+                document.querySelector('html').addEventListener('mousemove',function(e){
+                    pos.x =  Math.round(100 * (e.clientX / window.innerWidth));
+                    pos.y = Math.round(100 * (e.clientY / window.innerHeight));
+
+                    document.getElementById('thisone').innerHTML = 'x: ' + pos.x + ' y: ' + pos.y;
+                    socket.emit('position' , pos);
+
+                });
+                [].slice.call(document.querySelectorAll('ul li input')).forEach(function(el){
+                    el.addEventListener('click',function(){
+                        pos.colour = el.value;
+                        document.querySelector('#thisone').style.color = pos.colour;
+                        document.querySelector('.topthis').style.background = pos.colour;
+
+                    });
+                });
+            })();
+        </script>
+    </body>
+</html>
